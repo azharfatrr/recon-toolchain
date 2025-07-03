@@ -1,2 +1,0 @@
-heartology.id [A] [103.185.53.66] 
-www.heartology.id [A] [103.185.53.66] 

@@ -1,7 +1,0 @@
-heartology.id 103.185.53.66
-www.heartology.id 103.185.53.66
-beta.heartology.id N/A
-gass.heartology.id N/A
-mail.heartology.id N/A
-hectorie.heartology.id N/A
-meilisearch.heartology.id N/A
