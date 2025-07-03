@@ -1,0 +1,7 @@
+www.heartology.id
+gass.heartology.id
+hectorie.heartology.id
+beta.heartology.id
+meilisearch.heartology.id
+mail.heartology.id
+heartology.id
