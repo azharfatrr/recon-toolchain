@@ -78,7 +78,7 @@ fi
 # Run Katana
 if [[ ! -s "$KATANA_RAW" ]]; then
     echo "[INFO] Running Katana on active subdomains..."
-    katana -silent -list "$ACTIVE_DOMAINS" -jc -kf all -d 2 -fs rdn -o "$KATANA_RAW" 1>/dev/null
+    katana -silent -list "$ACTIVE_DOMAINS" -jc -xhr -kf all -d 3 -fs rdn -o "$KATANA_RAW" 1>/dev/null
 else
     echo "[INFO] Skipping Katana – results already exist."
 fi

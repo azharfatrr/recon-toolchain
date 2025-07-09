@@ -22,6 +22,7 @@ LOG_FILE="$LOG_DIR/run_${UTC_TIMESTAMP}.log"
 
 SUBDOMAIN_SCRIPT="./subdomain.sh"
 PORT_SCAN_SCRIPT="./port_scanning.sh"
+ENDPOINT_SCRIPT="./endpoint.sh"
 
 # --------------------------------------
 # Run all scripts with combined logging
@@ -35,6 +36,10 @@ PORT_SCAN_SCRIPT="./port_scanning.sh"
     echo
     echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Running port scanning..."
     bash "$PORT_SCAN_SCRIPT" "$TARGET" "$FORCE"
+
+    echo
+    echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Endpoint scanning..."
+    bash "$ENDPOINT_SCRIPT" "$TARGET" "$FORCE"
 
     echo
     echo "========== Scan completed: $(date -u +"%Y-%m-%d %H:%M:%S UTC") =========="
