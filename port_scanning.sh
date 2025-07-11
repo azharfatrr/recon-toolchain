@@ -67,7 +67,7 @@ awk '
         port = $1
         svc = $3
         gsub("/tcp", "", port)
-        printf "%s:%s %s\n", ip, port, svc
+        printf "%s %s %s\n", ip, port, svc
     }
 ' "$NMAP_RAW" > "$NMAP_PARSED"
 
