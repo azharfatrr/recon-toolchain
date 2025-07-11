@@ -2,30 +2,36 @@ import argparse
 import requests
 import xml.etree.ElementTree as ET
 import time
+import logging
+import gzip
+import io
+import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 checked_sitemaps = set()
+all_urls = set()
+lock = Lock()
+
+
+def get_namespace(tag):
+    if tag.startswith("{"):
+        return tag[1:].split("}")[0]
+    return ""
 
 
 def fetch_sitemap_urls(
-    sitemap_url, depth, max_depth, all_urls, max_urls, timeout, delay, retries
+    sitemap_url, depth, max_depth, max_urls, timeout, delay, retries
 ):
-    if sitemap_url in checked_sitemaps:
-        return
-
-    if depth > max_depth:
-        print(f"[!] Max depth reached at {sitemap_url}")
-        return
-
-    if len(all_urls) >= max_urls:
-        print(f"[!] Max URL limit reached ({max_urls}). Skipping {sitemap_url}")
-        return
+    with lock:
+        if sitemap_url in checked_sitemaps or len(all_urls) >= max_urls:
+            return
+        checked_sitemaps.add(sitemap_url)
 
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
         "Accept": "application/xml, text/xml;q=0.9, */*;q=0.8",
     }
-
-    checked_sitemaps.add(sitemap_url)
 
     for attempt in range(1, retries + 1):
         try:
@@ -33,96 +39,142 @@ def fetch_sitemap_urls(
             response = requests.get(sitemap_url, headers=headers, timeout=timeout)
 
             if response.status_code != 200:
-                print(f"[!] Failed to fetch {sitemap_url} (HTTP {response.status_code})")
+                logging.error(
+                    f"Failed to fetch {sitemap_url} (HTTP {response.status_code})"
+                )
                 return
 
-            root = ET.fromstring(response.content)
-            namespace = {"ns": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+            raw_content = response.content
+            content_type = response.headers.get("Content-Type", "")
+            if "gzip" in content_type or sitemap_url.endswith(".gz"):
+                raw_content = gzip.decompress(raw_content)
 
-            # Extract URL entries
-            for tag in root.findall("ns:url", namespace):
-                loc = tag.find("ns:loc", namespace)
+            root = ET.fromstring(raw_content)
+            namespace_uri = get_namespace(root.tag)
+            ns = {"ns": namespace_uri} if namespace_uri else {}
+
+            # Add URLs
+            for tag in root.findall("ns:url", ns):
+                loc = tag.find("ns:loc", ns)
                 if loc is not None and loc.text:
                     url = loc.text.strip()
-                    if url not in all_urls:
-                        all_urls.add(url)
-                        if len(all_urls) >= max_urls:
-                            print(f"[!] Max URL limit reached while processing {sitemap_url}")
-                            return
+                    with lock:
+                        if url not in all_urls and len(all_urls) < max_urls:
+                            all_urls.add(url)
 
-            # Extract nested sitemap entries
-            for tag in root.findall("ns:sitemap", namespace):
-                loc = tag.find("ns:loc", namespace)
+            # Find nested sitemaps
+            nested = []
+            for tag in root.findall("ns:sitemap", ns):
+                loc = tag.find("ns:loc", ns)
                 if loc is not None and loc.text:
-                    nested_sitemap_url = loc.text.strip()
-                    print(f"[*] Depth {depth} -> Nested: {nested_sitemap_url}")
-                    fetch_sitemap_urls(
-                        nested_sitemap_url,
-                        depth + 1,
-                        max_depth,
-                        all_urls,
-                        max_urls,
-                        timeout,
-                        delay,
-                        retries,
-                    )
+                    nested_url = loc.text.strip()
+                    logging.info(f"Depth {depth} -> Nested: {nested_url}")
+                    if depth < max_depth:
+                        nested.append((nested_url, depth + 1))
 
-            return  # Success, exit retry loop
+            return nested  # Return nested sitemaps for further processing
 
-        except requests.exceptions.Timeout:
-            print(f"[!] Timeout ({timeout}s) on attempt {attempt}/{retries} for {sitemap_url}")
-        except ET.ParseError as e:
-            print(f"[!] XML parse error in {sitemap_url}: {e}")
-            return
         except Exception as e:
-            print(f"[!] Error on attempt {attempt}/{retries} for {sitemap_url}: {e}")
+            logging.warning(f"[!] Error ({sitemap_url}): {e}")
 
-    print(f"[!] Failed to fetch {sitemap_url} after {retries} retries")
+    logging.error(f"Failed to fetch {sitemap_url} after {retries} retries")
+
+
+def threaded_crawler(
+    sitemap_urls, max_depth, max_urls, timeout, delay, retries, threads
+):
+    queue = [(url, 0) for url in sitemap_urls]
+
+    with ThreadPoolExecutor(max_workers=threads) as executor:
+        futures = []
+
+        while queue:
+            current_batch = []
+            for url, depth in queue:
+                future = executor.submit(
+                    fetch_sitemap_urls,
+                    url,
+                    depth,
+                    max_depth,
+                    max_urls,
+                    timeout,
+                    delay,
+                    retries,
+                )
+                futures.append(future)
+                current_batch.append(future)
+            queue = []  # clear queue for next nested layer
+
+            for future in as_completed(current_batch):
+                result = future.result()
+                if result:
+                    queue.extend(result)
+                if len(all_urls) >= max_urls:
+                    logging.warning("Max URL limit reached globally.")
+                    return
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Recursively extract endpoint URLs from sitemap.xml files"
-    )
+    parser = argparse.ArgumentParser(description="Fast threaded sitemap parser")
     parser.add_argument("-i", "--input", required=True, help="File with sitemap URLs")
-    parser.add_argument("-o", "--output", required=True, help="File to save extracted URLs")
-    parser.add_argument("--max-depth", type=int, default=5, help="Maximum recursion depth (default: 5)")
-    parser.add_argument("--max-urls", type=int, default=10000, help="Maximum number of URLs to extract (default: 10000)")
-    parser.add_argument("--timeout", type=int, default=10, help="Request timeout in seconds (default: 10)")
-    parser.add_argument("--delay", type=float, default=0.5, help="Delay between requests in seconds (default: 0.5)")
-    parser.add_argument("--retries", type=int, default=3, help="Number of retry attempts per request (default: 3)")
+    parser.add_argument(
+        "-o", "--output", required=True, help="File to save extracted URLs"
+    )
+    parser.add_argument(
+        "--max-depth", type=int, default=5, help="Maximum recursion depth"
+    )
+    parser.add_argument(
+        "--max-urls", type=int, default=10000, help="Maximum total URLs to extract"
+    )
+    parser.add_argument("--timeout", type=int, default=10, help="Timeout per request")
+    parser.add_argument(
+        "--delay", type=float, default=0.2, help="Delay per request (per thread)"
+    )
+    parser.add_argument("--retries", type=int, default=2, help="Retry attempts")
+    parser.add_argument("--threads", type=int, default=10, help="Number of threads")
+    parser.add_argument("--verbose", action="store_true", help="Verbose logging")
     args = parser.parse_args()
 
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="[%(levelname)s] %(message)s",
+    )
+
     try:
-        with open(args.input, "r") as infile:
-            sitemap_urls = [line.strip() for line in infile if "sitemap" in line]
+        with open(args.input, "r") as f:
+            sitemap_urls = [
+                line.strip()
+                for line in f
+                if re.search(
+                    r"(sitemap.*\.xml|\.xml(\.gz)?$)", line.strip(), re.IGNORECASE
+                )
+            ]
     except Exception as e:
-        print(f"[!] Failed to read input file: {e}")
+        logging.error(f"Error reading input: {e}")
         return
 
-    all_urls = set()
+    if not sitemap_urls:
+        logging.error("No valid sitemap URLs found.")
+        return
 
-    for sitemap_url in sitemap_urls:
-        print(f"[*] Root: {sitemap_url}")
-        fetch_sitemap_urls(
-            sitemap_url,
-            depth=0,
-            max_depth=args.max_depth,
-            all_urls=all_urls,
-            max_urls=args.max_urls,
-            timeout=args.timeout,
-            delay=args.delay,
-            retries=args.retries,
-        )
-        if len(all_urls) >= args.max_urls:
-            break
+    threaded_crawler(
+        sitemap_urls,
+        args.max_depth,
+        args.max_urls,
+        args.timeout,
+        args.delay,
+        args.retries,
+        args.threads,
+    )
 
-    with open(args.output, "w") as outfile:
-        for url in sorted(all_urls):
-            outfile.write(url + "\n")
-
-    print(f"[+] Done. {len(all_urls)} URLs written to {args.output}")
-    print(f"[+] {len(checked_sitemaps)} sitemap files checked")
+    try:
+        with open(args.output, "w") as out:
+            for url in sorted(all_urls):
+                out.write(url + "\n")
+        logging.info(f"[+] Done. {len(all_urls)} URLs saved to {args.output}")
+        logging.info(f"[+] {len(checked_sitemaps)} sitemaps checked.")
+    except Exception as e:
+        logging.error(f"Error writing output: {e}")
 
 
 if __name__ == "__main__":
