@@ -16,6 +16,8 @@ TARGET="$1"
 FORCE="$2"
 PPATH=$(pwd)
 
+SCRIPTS_PATH="$PPATH/scripts"
+
 RESULT_PATH="$PPATH/results/$TARGET"
 RAW_PATH="$RESULT_PATH/raw/endpoints"
 ACTIVE_DOMAINS="$RESULT_PATH/subdomains_active.txt"
@@ -87,6 +89,16 @@ fi
 # Merge and deduplicate raw URLs
 echo "[INFO] Merging and deduplicating raw URLs..."
 cat "$URLFINDER_RAW" "$KATANA_RAW" | sort -u > "$COMBINED_RAW"
+
+# --------------------------------------
+# Run Parse_Sitemap.py
+echo "[INFO] Parsing sitemap..."
+python3 "$SCRIPTS_PATH/parse_sitemap.py" -i "$COMBINED_RAW" -o "$RAW_PATH/sitemap_parsed.txt" 1>/dev/null
+
+# --------------------------------------
+# Recombine raw URLs with parsed sitemap
+echo "[INFO] Recombining raw URLs with parsed sitemap..."
+cat "$RAW_PATH/sitemap_parsed.txt" "$COMBINED_RAW" | sort -u > "$COMBINED_RAW"
 
 # --------------------------------------
 # Filter with urless

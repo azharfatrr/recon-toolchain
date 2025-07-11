@@ -84,8 +84,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Recursively extract endpoint URLs from sitemap.xml files"
     )
-    parser.add_argument("input_file", help="File with sitemap URLs")
-    parser.add_argument("output_file", help="File to save extracted URLs")
+    parser.add_argument("-i", "--input", required=True, help="File with sitemap URLs")
+    parser.add_argument("-o", "--output", required=True, help="File to save extracted URLs")
     parser.add_argument("--max-depth", type=int, default=5, help="Maximum recursion depth (default: 5)")
     parser.add_argument("--max-urls", type=int, default=10000, help="Maximum number of URLs to extract (default: 10000)")
     parser.add_argument("--timeout", type=int, default=10, help="Request timeout in seconds (default: 10)")
@@ -94,7 +94,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        with open(args.input_file, "r") as infile:
+        with open(args.input, "r") as infile:
             sitemap_urls = [line.strip() for line in infile if "sitemap" in line]
     except Exception as e:
         print(f"[!] Failed to read input file: {e}")
@@ -117,11 +117,11 @@ def main():
         if len(all_urls) >= args.max_urls:
             break
 
-    with open(args.output_file, "w") as outfile:
+    with open(args.output, "w") as outfile:
         for url in sorted(all_urls):
             outfile.write(url + "\n")
 
-    print(f"[+] Done. {len(all_urls)} URLs written to {args.output_file}")
+    print(f"[+] Done. {len(all_urls)} URLs written to {args.output}")
     print(f"[+] {len(checked_sitemaps)} sitemap files checked")
 
 
