@@ -26,8 +26,9 @@ URLFINDER_RAW="$RAW_PATH/urlfinder.txt"
 GAU_RAW="$RAW_PATH/gau.txt"
 WAYBACKURLS_RAW="$RAW_PATH/waybackurls.txt"
 KATANA_RAW="$RAW_PATH/katana.txt"
+SITEMAP_RAW="$RAW_PATH/sitemap.txt"
 
-COMBINED_RAW="$RAW_PATH/all_endpoints_combined.txt"
+COMBINED_RAW="$RAW_PATH/combined.txt"
 FILTERED_URLS="$RESULT_PATH/endpoints.txt"
 SORTED_BY_EXT="$RESULT_PATH/endpoints_extension.txt"
 
@@ -92,18 +93,24 @@ cat "$URLFINDER_RAW" "$KATANA_RAW" | sort -u > "$COMBINED_RAW"
 
 # --------------------------------------
 # Run Parse_Sitemap.py
-echo "[INFO] Parsing sitemap..."
-python3 "$SCRIPTS_PATH/parse_sitemap.py" -i "$COMBINED_RAW" -o "$RAW_PATH/sitemap_parsed.txt" 1>/dev/null
+if [[ ! -s "$SITEMAP_RAW" ]]; then
+    echo "[INFO] Parsing sitemap..."
+    python3 "$SCRIPTS_PATH/parse_sitemap.py" -i "$COMBINED_RAW" -o "$SITEMAP_RAW" 1>/dev/null
+else
+    echo "[INFO] Skipping sitemap parsing – already done."
+fi
+
 
 # --------------------------------------
 # Recombine raw URLs with parsed sitemap
 echo "[INFO] Recombining raw URLs with parsed sitemap..."
-cat "$RAW_PATH/sitemap_parsed.txt" "$COMBINED_RAW" | sort -u > "$COMBINED_RAW"
+cat "$COMBINED_RAW" "$SITEMAP_RAW" | sort -u > "$COMBINED_RAW.tmp"
+mv "$COMBINED_RAW.tmp" "$COMBINED_RAW"
 
 # --------------------------------------
 # Filter with urless
 echo "[INFO] Filtering endpoints using urless..."
-urless -i "$COMBINED_RAW" -o "$FILTERED_URLS" 1>/dev/null
+uro < "$COMBINED_RAW" | urless -o "$FILTERED_URLS" >/dev/null 2>&1
 
 # --------------------------------------
 # Sort filtered endpoints by file extension
