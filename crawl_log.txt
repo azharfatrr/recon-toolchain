@@ -1,0 +1,248 @@
+http://beta.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.100)
+Stacktrace:
+#0 0x56401c7c323a <unknown>
+#1 0x56401c26dab0 <unknown>
+#2 0x56401c264ca1 <unknown>
+#3 0x56401c255f99 <unknown>
+#4 0x56401c257ce0 <unknown>
+#5 0x56401c25633e <unknown>
+#6 0x56401c255caf <unknown>
+#7 0x56401c255985 <unknown>
+#8 0x56401c2537de <unknown>
+#9 0x56401c253fca <unknown>
+#10 0x56401c270fd9 <unknown>
+#11 0x56401c30bbb5 <unknown>
+#12 0x56401c2e51a2 <unknown>
+#13 0x56401c30afee <unknown>
+#14 0x56401c2e4f73 <unknown>
+#15 0x56401c2b1aeb <unknown>
+#16 0x56401c2b2751 <unknown>
+#17 0x56401c787b4b <unknown>
+#18 0x56401c78b929 <unknown>
+#19 0x56401c76e929 <unknown>
+#20 0x56401c78c4e8 <unknown>
+#21 0x56401c7530df <unknown>
+#22 0x56401c7b08e8 <unknown>
+#23 0x56401c7b0ac6 <unknown>
+#24 0x56401c7c2556 <unknown>
+#25 0x7f5aefcf6b7b <unknown>
+
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.100)
+Stacktrace:
+#0 0x56401c7c323a <unknown>
+#1 0x56401c26dab0 <unknown>
+#2 0x56401c264ca1 <unknown>
+#3 0x56401c255f99 <unknown>
+#4 0x56401c257ce0 <unknown>
+#5 0x56401c25633e <unknown>
+#6 0x56401c255caf <unknown>
+#7 0x56401c255985 <unknown>
+#8 0x56401c2537de <unknown>
+#9 0x56401c253fca <unknown>
+#10 0x56401c270fd9 <unknown>
+#11 0x56401c30bbb5 <unknown>
+#12 0x56401c2e51a2 <unknown>
+#13 0x56401c30afee <unknown>
+#14 0x56401c2e4f73 <unknown>
+#15 0x56401c2b1aeb <unknown>
+#16 0x56401c2b2751 <unknown>
+#17 0x56401c787b4b <unknown>
+#18 0x56401c78b929 <unknown>
+#19 0x56401c76e929 <unknown>
+#20 0x56401c78c4e8 <unknown>
+#21 0x56401c7530df <unknown>
+#22 0x56401c7b08e8 <unknown>
+#23 0x56401c7b0ac6 <unknown>
+#24 0x56401c7c2556 <unknown>
+#25 0x7f5aefcf6b7b <unknown>
+
+https://heartology.id?p=1138 --> ok
+https://heartology.id/tag/heartology --> ok
+http://beta.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.92)
+Stacktrace:
+#0 0x5596744fb23a <unknown>
+#1 0x559673fa5ab0 <unknown>
+#2 0x559673f9cca1 <unknown>
+#3 0x559673f8df99 <unknown>
+#4 0x559673f8fce0 <unknown>
+#5 0x559673f8e33e <unknown>
+#6 0x559673f8dcaf <unknown>
+#7 0x559673f8d985 <unknown>
+#8 0x559673f8b7de <unknown>
+#9 0x559673f8bfca <unknown>
+#10 0x559673fa8fd9 <unknown>
+#11 0x559674043bb5 <unknown>
+#12 0x55967401d1a2 <unknown>
+#13 0x559674042fee <unknown>
+#14 0x55967401cf73 <unknown>
+#15 0x559673fe9aeb <unknown>
+#16 0x559673fea751 <unknown>
+#17 0x5596744bfb4b <unknown>
+#18 0x5596744c3929 <unknown>
+#19 0x5596744a6929 <unknown>
+#20 0x5596744c44e8 <unknown>
+#21 0x55967448b0df <unknown>
+#22 0x5596744e88e8 <unknown>
+#23 0x5596744e8ac6 <unknown>
+#24 0x5596744fa556 <unknown>
+#25 0x7f84adcd6b7b <unknown>
+
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.92)
+Stacktrace:
+#0 0x5596744fb23a <unknown>
+#1 0x559673fa5ab0 <unknown>
+#2 0x559673f9cca1 <unknown>
+#3 0x559673f8df99 <unknown>
+#4 0x559673f8fce0 <unknown>
+#5 0x559673f8e33e <unknown>
+#6 0x559673f8dcaf <unknown>
+#7 0x559673f8d985 <unknown>
+#8 0x559673f8b7de <unknown>
+#9 0x559673f8bfca <unknown>
+#10 0x559673fa8fd9 <unknown>
+#11 0x559674043bb5 <unknown>
+#12 0x55967401d1a2 <unknown>
+#13 0x559674042fee <unknown>
+#14 0x55967401cf73 <unknown>
+#15 0x559673fe9aeb <unknown>
+#16 0x559673fea751 <unknown>
+#17 0x5596744bfb4b <unknown>
+#18 0x5596744c3929 <unknown>
+#19 0x5596744a6929 <unknown>
+#20 0x5596744c44e8 <unknown>
+#21 0x55967448b0df <unknown>
+#22 0x5596744e88e8 <unknown>
+#23 0x5596744e8ac6 <unknown>
+#24 0x5596744fa556 <unknown>
+#25 0x7f84adcd6b7b <unknown>
+
+https://heartology.id?p=1138 --> not_found
+https://heartology.id/tag/heartology --> not_found
+http://beta.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.92)
+Stacktrace:
+#0 0x558acdf2123a <unknown>
+#1 0x558acd9cbab0 <unknown>
+#2 0x558acd9c2ca1 <unknown>
+#3 0x558acd9b3f99 <unknown>
+#4 0x558acd9b5ce0 <unknown>
+#5 0x558acd9b433e <unknown>
+#6 0x558acd9b3caf <unknown>
+#7 0x558acd9b3985 <unknown>
+#8 0x558acd9b17de <unknown>
+#9 0x558acd9b1fca <unknown>
+#10 0x558acd9cefd9 <unknown>
+#11 0x558acda69bb5 <unknown>
+#12 0x558acda431a2 <unknown>
+#13 0x558acda68fee <unknown>
+#14 0x558acda42f73 <unknown>
+#15 0x558acda0faeb <unknown>
+#16 0x558acda10751 <unknown>
+#17 0x558acdee5b4b <unknown>
+#18 0x558acdee9929 <unknown>
+#19 0x558acdecc929 <unknown>
+#20 0x558acdeea4e8 <unknown>
+#21 0x558acdeb10df <unknown>
+#22 0x558acdf0e8e8 <unknown>
+#23 0x558acdf0eac6 <unknown>
+#24 0x558acdf20556 <unknown>
+#25 0x7f2c34272b7b <unknown>
+
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+  (Session info: chrome=138.0.7204.92)
+Stacktrace:
+#0 0x558acdf2123a <unknown>
+#1 0x558acd9cbab0 <unknown>
+#2 0x558acd9c2ca1 <unknown>
+#3 0x558acd9b3f99 <unknown>
+#4 0x558acd9b5ce0 <unknown>
+#5 0x558acd9b433e <unknown>
+#6 0x558acd9b3caf <unknown>
+#7 0x558acd9b3985 <unknown>
+#8 0x558acd9b17de <unknown>
+#9 0x558acd9b1fca <unknown>
+#10 0x558acd9cefd9 <unknown>
+#11 0x558acda69bb5 <unknown>
+#12 0x558acda431a2 <unknown>
+#13 0x558acda68fee <unknown>
+#14 0x558acda42f73 <unknown>
+#15 0x558acda0faeb <unknown>
+#16 0x558acda10751 <unknown>
+#17 0x558acdee5b4b <unknown>
+#18 0x558acdee9929 <unknown>
+#19 0x558acdecc929 <unknown>
+#20 0x558acdeea4e8 <unknown>
+#21 0x558acdeb10df <unknown>
+#22 0x558acdf0e8e8 <unknown>
+#23 0x558acdf0eac6 <unknown>
+#24 0x558acdf20556 <unknown>
+#25 0x7f2c34272b7b <unknown>
+
+https://heartology.id?p=1138 --> not_found
+https://heartology.id/tag/heartology --> not_found
+http://beta.heartology.id --> error: WebDriverException: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: WebDriverException: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+https://heartology.id?p=1138 --> not_found
+https://heartology.id/tag/heartology --> not_found
+http://beta.heartology.id --> error: WebDriverException: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: TimeoutException: Message: timeout: Timed out receiving message from renderer: -0.002
+https://heartology.id?p=1138 --> not_found
+https://heartology.id/tag/heartology --> not_found
+http://beta.heartology.id --> error: WebDriverException: Message: unknown error: net::ERR_NAME_NOT_RESOLVED
+http://heartology.id/robots.txt --> ok
+http://hectorie.heartology.id --> error: TimeoutException: Message: timeout: Timed out receiving message from renderer: -0.002
+https://heartology.id?p=1138 --> not_found
+https://heartology.id?wc-ajax=get_refreshed_fragments --> not_found
+https://heartology.id/” --> not_found
+https://heartology.id/1500-258 --> ok
+https://heartology.id/%5C%5C/heartology.id%5C%5C/wp-admin%5C%5C/admin-ajax.php --> not_found
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-admin%5C/admin-ajax.php --> not_found
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-content%5C/plugins%5C/elementor-pro%5C/modules%5C/lottie%5C/assets%5C/animations%5C/default.json --> not_found
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-includes%5C/js%5C/gtm.js --> not_found
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-includes%5C/js%5C/wp-emoji-release.min.js --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-admin%5C/admin-ajax.php --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-admin%5C/authorize-application.php --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-content%5C/plugins%5C/elementor-pro%5C/modules%5C/lottie%5C/assets%5C/animations%5C/default.json --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-content%5C/plugins%5C/elementor-pro%5C/modules%5C/lottie%5C/assets%5C/animations%5C/gtm.js --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-includes%5C/js%5C/gtm.js --> not_found
+https://heartology.id/%5C/heartology.id%5C/wp-includes%5C/js%5C/wp-emoji-release.min.js --> not_found
+https://heartology.id/ablasi-3d --> not_found
+https://heartology.id/ablasi-aritmia --> not_found
+https://heartology.id/ablasi-aritmia-en --> not_found
+https://heartology.id/ablasi-aritmia-menu-en --> not_found
+https://heartology.id/ablasi-jantung-aritmia --> not_found
+https://heartology.id/about --> ok
+https://heartology.id/acara --> not_found
+https://heartology.id/acara-sitemap.xml --> ok
+https://heartology.id/add-listing-page --> not_found
+https://heartology.id/ads/dedicated-page-sample --> not_found
+https://heartology.id/ads.txt --> not_found
+https://heartology.id/alat-alat-rumah-sakit --> not_found
+https://heartology.id/aorta-dan-peripheral --> not_found
+https://heartology.id/aorta-peripheral --> not_found
+https://heartology.id/aortic-center --> ok
+https://heartology.id/aortic-center-2 --> not_found
+https://heartology.id/aortic-dan-peripheral --> not_found
+https://heartology.id/aortic-peripheral --> not_found
+https://heartology.id/aortic-valve-reconstruction --> not_found
+http://beta.heartology.id --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+http://heartology.id/robots.txt --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id?p=1138 --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+http://hectorie.heartology.id --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id?wc-ajax=get_refreshed_fragments --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/%5C%5C/heartology.id%5C%5C/wp-admin%5C%5C/admin-ajax.php --> not_found
+https://heartology.id/1500-258 --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-content%5C/plugins%5C/elementor-pro%5C/modules%5C/lottie%5C/assets%5C/animations%5C/default.json --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-admin%5C/admin-ajax.php --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-includes%5C/js%5C/gtm.js --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/” --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+https://heartology.id/%5C/heartology.id%5C/health-library%5C/wp-includes%5C/js%5C/wp-emoji-release.min.js --> error: ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
