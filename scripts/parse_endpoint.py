@@ -18,7 +18,9 @@ def parse_args():
     parser.add_argument("--not-found-keywords", type=str,
                         help="Comma-separated keywords to detect 'not found' pages")
     parser.add_argument("--driver-path", type=str,
-                        help="Optional path to ChromeDriver executable if you want to override default")
+                        help=f"Optional path to ChromeDriver executable (default: {DEFAULT_DRIVER_PATH})")
+    parser.add_argument("--retries", type=int, default=3,
+                        help="Number of retries on failure per URL (default: 3)")
     return parser.parse_args()
 
 def load_urls(filepath: str) -> List[str]:
@@ -53,19 +55,34 @@ def is_not_found(title: str, source: str, keywords: List[str]) -> bool:
     content = f"{title} {source}".lower()
     return any(keyword.lower() in content for keyword in keywords)
 
-def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str]) -> str:
-    try:
-        driver.get(url)
-        time.sleep(delay)
-        title = driver.title
-        source = driver.page_source
+def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retries: int = 3) -> str:
+    for attempt in range(1, retries + 1):
+        try:
+            driver.get(url)
+            time.sleep(delay)
+            title = driver.title
+            source = driver.page_source
 
-        if is_not_found(title, source, keywords):
-            return "not_found"
-        return "ok"
+            if is_not_found(title, source, keywords):
+                return "not_found"
+            return "ok"
 
-    except Exception as e:
-        return f"error: {e.__class__.__name__}: {str(e).splitlines()[0]}"
+        except Exception as e:
+            message = str(e)
+            err = f"error: {e.__class__.__name__}: {message.splitlines()[0]}"
+            print(f"  [!] Attempt {attempt} failed: {err}")
+
+            # Skip retries if it's a DNS resolution error
+            if "ERR_NAME_NOT_RESOLVED" in message:
+                print("  [!] Skipping retries due to DNS resolution failure.")
+                return err
+
+            if attempt < retries:
+                time.sleep(delay)  # short delay before retrying
+            else:
+                return err
+
+    return "error: UnknownError"
 
 def save_valid_url(output_file: str, url: str):
     with open(output_file, "a") as f:
@@ -77,13 +94,14 @@ def process_urls(
     timeout: int,
     output_file: Optional[str],
     keywords: List[str],
-    driver_path: Optional[str] = None
+    driver_path: Optional[str] = None,
+    retries: int = 3
 ):
     driver = setup_driver(timeout, driver_path)
     try:
         for idx, url in enumerate(urls, 1):
             print(f"[{idx}/{len(urls)}] Visiting: {url}")
-            status = check_url(driver, url, delay, keywords)
+            status = check_url(driver, url, delay, keywords, retries)
 
             if status == "not_found":
                 print("  [!] Page not found.")
@@ -91,8 +109,6 @@ def process_urls(
                 print("  [+] Page OK.")
                 if output_file:
                     save_valid_url(output_file, url)
-            else:
-                print(f"  [!] Error: {status}")
     finally:
         driver.quit()
 
@@ -111,7 +127,8 @@ def main():
         timeout=args.timeout,
         output_file=args.output,
         keywords=keywords,
-        driver_path=args.driver_path
+        driver_path=args.driver_path,
+        retries=args.retries
     )
 
 if __name__ == "__main__":
