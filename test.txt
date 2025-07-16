@@ -1,0 +1,5 @@
+http://heartology.id/robots.txt
+http://beta.heartology.id
+http://heartology.id/robots.txt
+https://heartology.id/”
+https://heartology.id/1500-258

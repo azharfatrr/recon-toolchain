@@ -24,7 +24,9 @@ wget -q -N "$CHROMEDRIVER_URL" -O /tmp/chromedriver.zip
 unzip -q /tmp/chromedriver.zip -d /tmp/chromedriver
 
 sudo cp /tmp/chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+
 sudo chmod +x /usr/local/bin/chromedriver
+sudo chown "$USER":"$USER" /usr/local/bin/chromedriver
 
 echo "[+] Installed ChromeDriver version:"
 chromedriver -v
