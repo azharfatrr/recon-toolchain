@@ -39,7 +39,7 @@ fi
 
 # Derived paths
 TEMP_DIR="$RESULT_DIR/temp_chunks"
-FINAL_OUTPUT="${OUTPUT_FILE:-$RESULT_DIR/endpoint_active.txt}"
+FINAL_OUTPUT="${OUTPUT_FILE:-$RESULT_DIR/endpoints_active.txt}"
 
 # Trap Ctrl+C
 trap 'echo "[!] Script interrupted. Cleaning up..."; rm -rf "$TEMP_DIR"; exit 1' INT
@@ -71,5 +71,5 @@ cat "$TEMP_DIR"/output_chunk_*.txt > "$FINAL_OUTPUT"
 echo "[+] Merged output written to $FINAL_OUTPUT"
 
 # Clean up
-rm -r "$TEMP_DIR"
+# rm -r "$TEMP_DIR"
 echo "[+] Temporary files cleaned up."

@@ -110,7 +110,7 @@ mv "$COMBINED_RAW.tmp" "$COMBINED_RAW"
 # --------------------------------------
 # Filter with urless
 echo "[INFO] Filtering endpoints using urless..."
-uro < "$COMBINED_RAW" | urless -o "$FILTERED_URLS" >/dev/null 2>&1
+grep -v '\.js' "$COMBINED_RAW" | uro | urless > "$FILTERED_URLS" >/dev/null 2>&1
 
 # --------------------------------------
 # Sort filtered endpoints by file extension
