@@ -8,3 +8,12 @@ http://heartology.id/robots.txt
 http://heartology.id/robots.txt
 https://heartology.id/”
 https://heartology.id/1500-258
+http://beta.heartology.id
+http://heartology.id/robots.txt
+https://heartology.id?wc-ajax=get_refreshed_fragments
+https://heartology.id/”
+https://heartology.id/1500-258
+http://heartology.id/robots.txt
+https://heartology.id/”
+http://beta.heartology.id
+http://heartology.id/robots.txt
