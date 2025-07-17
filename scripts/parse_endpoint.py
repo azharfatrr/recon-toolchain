@@ -2,35 +2,34 @@ import sys
 import time
 import argparse
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import undetected_chromedriver as uc
 
 # Default keywords that indicate "Not Found" pages
 DEFAULT_NOT_FOUND_KEYWORDS = ["404", "not found", "tidak ditemukan"]
-DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"
+DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"  # Minimum delay between requests in seconds
+
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Check URLs using Selenium (undetected_chromedriver).")
+    parser = argparse.ArgumentParser(
+        description="Check URLs using Selenium (undetected_chromedriver)."
+    )
     parser.add_argument("-i", "--input", required=True, help="Input file with list of URLs")
     parser.add_argument("-o", "--output", help="File to save valid (non-404) URLs")
-    parser.add_argument("-d", "--delay", type=int, default=1, help="Delay between requests in seconds (default: 1)")
+    parser.add_argument("-d", "--delay", type=int, default=1, help="Initial delay between requests in seconds (default: 1)")
     parser.add_argument("--timeout", type=int, default=10, help="Page load timeout in seconds (default: 10)")
-    parser.add_argument("--not-found-keywords", type=str,
-                        help="Comma-separated keywords to detect 'not found' pages")
-    parser.add_argument("--driver-path", type=str,
-                        help=f"Optional path to ChromeDriver executable (default: {DEFAULT_DRIVER_PATH})")
-    parser.add_argument("--retries", type=int, default=3,
-                        help="Number of retries on failure per URL (default: 3)")
+    parser.add_argument("--not-found-keywords", type=str, help="Comma-separated keywords to detect 'not found' pages")
+    parser.add_argument("--driver-path", type=str, help=f"Optional path to ChromeDriver executable (default: {DEFAULT_DRIVER_PATH})")
+    parser.add_argument("--retries", type=int, default=2, help="Number of retries on failure per URL (default: 2)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging (DEBUG level)")
     return parser.parse_args()
 
+
 def setup_logging(verbose: bool):
     level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=level,
-        format="%(message)s",  # Keep it clean like print
-    )
+    logging.basicConfig(level=level, format="%(message)s")
+
 
 def load_urls(filepath: str) -> List[str]:
     try:
@@ -40,40 +39,50 @@ def load_urls(filepath: str) -> List[str]:
         logging.error(f"[!] File not found: {filepath}")
         sys.exit(1)
 
+
 def setup_driver(timeout: int, driver_path: Optional[str] = None) -> uc.Chrome:
     options = uc.ChromeOptions()
-    options.add_argument("--headless=new")
+    # options.add_argument("--headless=new")  # Commented for debugging WAF
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("start-maximized")
 
     path_to_use = driver_path if driver_path else DEFAULT_DRIVER_PATH
 
     try:
-        driver = uc.Chrome(
-            options=options,
-            driver_executable_path=path_to_use
-        )
+        driver = uc.Chrome(options=options, driver_executable_path=path_to_use)
         driver.set_page_load_timeout(timeout)
         return driver
     except Exception as e:
         logging.error(f"[!] ERROR during driver setup using path '{path_to_use}': {e}")
         sys.exit(1)
 
+
 def is_not_found(title: str, source: str, keywords: List[str]) -> bool:
     content = f"{title} {source}".lower()
     return any(keyword.lower() in content for keyword in keywords)
 
-def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retries: int = 3) -> str:
+
+def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retries: int = 3) -> Tuple[str, int]:
     for attempt in range(1, retries + 1):
         try:
             driver.get(url)
             time.sleep(delay)
+
             title = driver.title
             source = driver.page_source
+            logging.debug(f"  [Title]: {title}")
+
+            # Check if WAF is still blocking (Cloudflare-style)
+            if "one moment" in source.lower():
+                logging.debug("  [!] WAF block detected. Increasing delay.")
+                return "waf_blocked", min(delay + 2, 15)
 
             if is_not_found(title, source, keywords):
-                return "not_found"
-            return "ok"
+                return "not_found", max(delay - 1, 1)
+
+            return "ok", max(delay - 1, 1)
 
         except Exception as e:
             message = str(e)
@@ -82,16 +91,18 @@ def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retr
 
             if "ERR_NAME_NOT_RESOLVED" in message:
                 logging.warning("  [!] Skipping retries due to DNS resolution failure.")
-                return err
+                return err, delay
 
             if attempt >= retries:
-                return err
+                return err, delay
 
-    return "error: UnknownError"
+    return "error: UnknownError", delay
+
 
 def save_valid_url(output_file: str, url: str):
     with open(output_file, "a") as f:
         f.write(url + "\n")
+
 
 def process_urls(
     urls: List[str],
@@ -100,13 +111,13 @@ def process_urls(
     output_file: Optional[str],
     keywords: List[str],
     driver_path: Optional[str] = None,
-    retries: int = 3
+    retries: int = 3,
 ):
     driver = setup_driver(timeout, driver_path)
     try:
         for idx, url in enumerate(urls, 1):
             logging.info(f"[{idx}/{len(urls)}] Visiting: {url}")
-            status = check_url(driver, url, delay, keywords, retries)
+            status, delay = check_url(driver, url, delay, keywords, retries)
 
             if status == "not_found":
                 logging.info("  [!] Page not found.")
@@ -114,10 +125,16 @@ def process_urls(
                 logging.info("  [+] Page OK.")
                 if output_file:
                     save_valid_url(output_file, url)
+            elif status == "waf_blocked":
+                logging.info("  [!] WAF detected. Delay increased.")
             else:
                 logging.info(f"  [!] {status}")
+
+            logging.info(f"  [~] Next delay: {delay} seconds")
+
     finally:
         driver.quit()
+
 
 def main():
     args = parse_args()
@@ -125,7 +142,8 @@ def main():
 
     keywords = (
         [kw.strip() for kw in args.not_found_keywords.split(",")]
-        if args.not_found_keywords else DEFAULT_NOT_FOUND_KEYWORDS
+        if args.not_found_keywords
+        else DEFAULT_NOT_FOUND_KEYWORDS
     )
 
     urls = load_urls(args.input)
@@ -136,8 +154,9 @@ def main():
         output_file=args.output,
         keywords=keywords,
         driver_path=args.driver_path,
-        retries=args.retries
+        retries=args.retries,
     )
+
 
 if __name__ == "__main__":
     main()
