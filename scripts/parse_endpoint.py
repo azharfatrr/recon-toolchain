@@ -4,13 +4,20 @@ import argparse
 import logging
 import random
 from typing import List, Optional, Tuple
+from collections import defaultdict, deque
+from urllib.parse import urlparse
+from fnmatch import fnmatch
 
 import undetected_chromedriver as uc
 
 # Default keywords that indicate "Not Found" pages
 DEFAULT_NOT_FOUND_KEYWORDS = ["404", "not found", "tidak ditemukan"]
-# DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"  # Minimum delay between requests in seconds
-DEFAULT_DRIVER_PATH = ""  # Adjust this path as needed
+DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"  
+# DEFAULT_DRIVER_PATH = ""  # Adjust this path as needed
+
+SKIP_PATTERNS = [
+    "/tag/*",  # Add more patterns if needed
+]
 
 
 def parse_args():
@@ -71,7 +78,25 @@ def load_urls(filepath: str) -> List[str]:
     except FileNotFoundError:
         logging.error(f"[!] File not found: {filepath}")
         sys.exit(1)
+        
+def get_common_prefix(url: str) -> str:
+    parts = urlparse(url)
+    path_parts = [p for p in parts.path.strip("/").split("/") if p]
 
+    if len(path_parts) > 2:
+        prefix_path = "/".join(path_parts[:-1])
+        return f"{parts.scheme}://{parts.netloc}/{prefix_path}/"
+    else:
+        return str(random.randint(100000, 999999))
+    
+def should_skip_path(url: str, skip_patterns: List[str]) -> bool:
+    parsed = urlparse(url)
+    path = parsed.path
+
+    for pattern in skip_patterns:
+        if fnmatch(path, pattern):
+            return True
+    return False
 
 def setup_driver(timeout: int, driver_path: Optional[str] = None) -> uc.Chrome:
     options = uc.ChromeOptions()
@@ -166,9 +191,36 @@ def process_urls(
 ):
     driver = setup_driver(timeout, driver_path)
     try:
+        # Memory-efficient status tracker (only last 3 statuses per prefix)
+        common_path_status = defaultdict(lambda: deque(maxlen=3))
+        skipped_prefixes = set()
+
         for idx, url in enumerate(urls, 1):
+            common_path = get_common_prefix(url)
+            
+            # Skip URLs that match any of the skip patterns
+            if should_skip_path(url, SKIP_PATTERNS):
+                logging.info(f"[~] Skipping {url} (matched skip pattern)")
+                continue
+
+            # If we already skipped this prefix, skip this URL
+            if common_path in skipped_prefixes:
+                logging.info(f"[~] Skipping {url} (prefix {common_path} previously skipped)")
+                continue
+
+            # If 3 same consecutive results seen for this path, skip the rest
+            recent = common_path_status[common_path]
+            logging.info(f"[~] Recent statuses for {common_path}: {list(recent)}")
+            if len(recent) == 3 and len(set(recent)) == 1:
+                logging.info(f"[~] Skipping rest of URLs in: {common_path} (3x '{recent[0]}')")
+                skipped_prefixes.add(common_path)
+                continue
+
             logging.info(f"[{idx}/{len(urls)}] Visiting: {url}")
             status, delay = check_url(driver, url, delay, keywords, retries)
+
+            # Track last 3 statuses
+            common_path_status[common_path].append(status)
 
             if status == "not_found":
                 logging.info("  [!] Page not found.")
