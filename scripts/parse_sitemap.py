@@ -141,7 +141,7 @@ def main():
     )
 
     try:
-        with open(args.input, "r") as f:
+        with open(args.input, "r", encoding="utf-8", errors="replace") as f:
             sitemap_urls = [
                 line.strip()
                 for line in f

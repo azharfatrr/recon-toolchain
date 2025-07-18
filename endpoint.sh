@@ -31,6 +31,9 @@ SITEMAP_RAW="$RAW_PATH/sitemap.txt"
 COMBINED_RAW="$RAW_PATH/combined.txt"
 FILTERED_URLS="$RESULT_PATH/endpoints.txt"
 SORTED_BY_EXT="$RESULT_PATH/endpoints_extension.txt"
+ACTIVE_URLS="$RESULT_PATH/endpoints_active.txt"
+PAGE_HTML="$RESULT_PATH/html"
+CREDENTIALS="$RESULT_PATH/credentials.txt"
 
 # --------------------------------------
 # Force cleanup
@@ -110,7 +113,7 @@ mv "$COMBINED_RAW.tmp" "$COMBINED_RAW"
 # --------------------------------------
 # Filter with urless
 echo "[INFO] Filtering endpoints using urless..."
-grep -vi '\.js' "$COMBINED_RAW" | uro | urless > "$FILTERED_URLS"
+uro < "$COMBINED_RAW" | urless > "$FILTERED_URLS"
 
 # --------------------------------------
 # Sort filtered endpoints by file extension
@@ -126,6 +129,25 @@ awk '{
     print ext "\t" url;
 }' "$FILTERED_URLS" | sort -k1,1 | cut -f2- > "$SORTED_BY_EXT"
 
+# -----------------------------------------
+# Get active endpoints
+echo "[INFO] Getting active endpoints..."
+if [[ -s "$ACTIVE_URLS" ]]; then
+    echo "[INFO] Skipping scanning active endpoints - already exists and is not empty."
+else
+    : > "$ACTIVE_URLS"
+    python3 "$SCRIPTS_PATH/parse_endpoint.py" -i "$FILTERED_URLS" -o "$ACTIVE_URLS" --html-dump-dir "$PAGE_HTML"
+fi
+
+# -----------------------------------------
+# Get credentials
+echo "[INFO] Getting credentials from active endpoints..."
+if [[ -s "$CREDENTIALS" ]]; then
+    echo "[INFO] Skipping scanning credentials - already exists and is not empty."
+else
+    : > "$CREDENTIALS"
+    python3 "$SCRIPTS_PATH/parse_credential.py" -i "$PAGE_HTML" -o "$CREDENTIALS"
+fi
 
 # --------------------------------------
 # Completion

@@ -56,7 +56,7 @@ for chunk in "$TEMP_DIR"/chunk_*; do
   chunk_name=$(basename "$chunk")
   echo "[*] Starting process $i for $chunk_name"
 
-  python3 "$SCRIPT" -i "$chunk" -o "$TEMP_DIR/output_$chunk_name.txt" \
+  python3 "$SCRIPT" -i "$chunk" -o "$TEMP_DIR/output_$chunk_name.txt" --html-dump-dir "$RESULT_DIR/html"  \
     > "$TEMP_DIR/log_$chunk_name.txt" 2>&1 &
 
   ((i++))

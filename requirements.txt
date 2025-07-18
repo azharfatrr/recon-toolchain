@@ -1,0 +1,7 @@
+setuptools
+archivebox
+yt-dlp 
+playwright
+undetected_chromedriver
+requests 
+jsbeautifier
