@@ -39,7 +39,7 @@ CREDENTIALS="$RESULT_PATH/credentials.txt"
 # Force cleanup
 if [[ "$FORCE" == "--force" ]]; then
     rm -rf "$RAW_PATH"
-    rm -f "$FILTERED_URLS" "$SORTED_BY_EXT"
+    rm -f "$FILTERED_URLS" "$SORTED_BY_EXT" "$ACTIVE_URLS" "$PAGE_HTML" "$CREDENTIALS"
 fi
 
 # --------------------------------------
@@ -98,6 +98,7 @@ cat "$URLFINDER_RAW" "$KATANA_RAW" | sort -u > "$COMBINED_RAW"
 # Run Parse_Sitemap.py
 if [[ ! -s "$SITEMAP_RAW" ]]; then
     echo "[INFO] Parsing sitemap..."
+    touch "$SITEMAP_RAW"
     python3 "$SCRIPTS_PATH/parse_sitemap.py" -i "$COMBINED_RAW" -o "$SITEMAP_RAW" 1>/dev/null
 else
     echo "[INFO] Skipping sitemap parsing – already done."

@@ -1,4 +1,14 @@
-from curses import ERR
+"""
+URL Validator and HTML Dumper using undetected-chromedriver
+
+This script takes a list of URLs and visits them using a headless browser.
+It checks for fake 404 pages (based on keywords), WAF challenges, and repeated
+failures based on URL patterns. It also optionally saves valid HTML responses
+and supports skipping redundant checks based on path patterns.
+
+Author: YourName (You can replace with your name)
+"""
+
 import sys
 import time
 import argparse
@@ -6,6 +16,7 @@ import logging
 import random
 import hashlib
 import os
+import re
 from typing import List, Optional, Tuple
 from collections import defaultdict, deque
 from urllib.parse import urlparse
@@ -14,6 +25,7 @@ from fnmatch import fnmatch
 import undetected_chromedriver as uc
 from tqdm import tqdm
 
+# Default configuration
 DEFAULT_NOT_FOUND_KEYWORDS = ["404", "not found", "tidak ditemukan"]
 DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"
 SKIP_PATTERNS = ["*/tag/*", "*/id/*", "*/en/*"]
@@ -25,7 +37,14 @@ ERROR_SIGNATURES = [
     "Error code: ERR_EMPTY_RESPONSE",
 ]
 
+# ────────────────────────────────────────────────────────────────────────────────
+# Argument Parsing and Logger Setup
+# ────────────────────────────────────────────────────────────────────────────────
+
 def parse_args():
+    """
+    Parses command-line arguments.
+    """
     parser = argparse.ArgumentParser(description="Check URLs using Selenium.")
     parser.add_argument("-i", "--input", required=True, help="Input file with list of URLs")
     parser.add_argument("-o", "--output", help="File to save valid (non-404) URLs")
@@ -39,35 +58,85 @@ def parse_args():
     return parser.parse_args()
 
 def setup_logging(verbose: bool):
+    """
+    Configures the logger based on verbosity.
+    """
     level = logging.INFO if verbose else logging.CRITICAL
     logging.basicConfig(level=level, format="%(message)s")
 
+# ────────────────────────────────────────────────────────────────────────────────
+# URL Utilities
+# ────────────────────────────────────────────────────────────────────────────────
+
 def load_urls(filepath: str) -> List[str]:
+    """
+    Loads and deduplicates URLs from a file.
+    """
     try:
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             return [line.strip() for line in f if line.strip()]
     except FileNotFoundError:
         logging.error(f"[!] File not found: {filepath}")
         sys.exit(1)
 
-def get_common_prefix(url: str) -> str:
-    parts = urlparse(url)
-    path_parts = [p for p in parts.path.strip("/").split("/") if p]
-    if len(path_parts) > 2:
-        prefix_path = "/".join(path_parts[:-1])
-        return f"{parts.scheme}://{parts.netloc}/{prefix_path}/"
-    else:
-        return str(random.randint(100000, 999999))
-    
+
 def get_path_without_query(url: str) -> str:
+    """
+    Extracts the path portion of the URL, removing any embedded
+    query-like parameters or garbage from malformed URLs.
+
+    Args:
+        url (str): A full URL.
+
+    Returns:
+        str: The cleaned path, like '/foo/bar'
+    """
     parsed = urlparse(url)
-    return parsed.path.rstrip("/")
+    return re.split(r'[&;?]', parsed.path, maxsplit=1)[0].rstrip("/")
+
+
+def get_common_prefix(url: str) -> str:
+    """
+    Returns the cleaned common prefix of the URL, including:
+    - Scheme (http or https)
+    - Hostname
+    - First N-1 parts of the path (as a parent directory)
+
+    Uses get_path_without_query() to normalize the path.
+
+    Args:
+        url (str): A full URL.
+
+    Returns:
+        str: Prefix like 'https://example.com/blog/article'
+    """
+    parsed = urlparse(url)
+    clean_path = get_path_without_query(url)
+    path_parts = [p for p in clean_path.strip("/").split("/") if p]
+
+    if len(path_parts) >= 2:
+        prefix_path = "/".join(path_parts[:-1])
+        return f"{parsed.scheme}://{parsed.netloc}/{prefix_path}"
+    elif path_parts:
+        return f"{parsed.scheme}://{parsed.netloc}/{path_parts[0]}"
+    else:
+        return f"{parsed.scheme}://{parsed.netloc}"
 
 def should_skip_path(url: str, skip_patterns: List[str]) -> bool:
+    """
+    Checks if a URL path matches any skip pattern (e.g., */tag/*).
+    """
     parsed = urlparse(url)
     return any(fnmatch(parsed.path, pattern) for pattern in skip_patterns)
 
+# ────────────────────────────────────────────────────────────────────────────────
+# Selenium Driver Setup and Response Handling
+# ────────────────────────────────────────────────────────────────────────────────
+
 def setup_driver(timeout: int, driver_path: Optional[str] = None) -> uc.Chrome:
+    """
+    Sets up a headless Chrome WebDriver with image loading disabled.
+    """
     options = uc.ChromeOptions()
     prefs = {"profile.managed_default_content_settings.images": 2}
     options.add_experimental_option("prefs", prefs)
@@ -88,20 +157,16 @@ def setup_driver(timeout: int, driver_path: Optional[str] = None) -> uc.Chrome:
         sys.exit(1)
 
 def is_not_found(title: str, source: str, keywords: List[str]) -> bool:
+    """
+    Determines if the page source and title indicate a 404 or 'not found' page.
+    """
     content = f"{title} {source}".lower()
     return any(keyword.lower() in content for keyword in keywords)
 
-def url_to_filename(url: str) -> str:
-    parsed = urlparse(url)
-    clean_path = parsed.path.strip("/").replace("/", "_") or "root"
-    base = f"{parsed.netloc}_{clean_path}"
-    hashed = hashlib.md5(url.encode()).hexdigest()[:8]
-    return f"{base}_{hashed}.html"
-
 def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retries: int = 3) -> Tuple[str, int, Optional[str]]:
     """
-    Attempts to load a URL using the given WebDriver and returns the result status,
-    updated delay, and page source if available.
+    Attempts to load a URL and returns a status, updated delay, and page source.
+    Statuses: "ok", "not_found", "waf_blocked", "empty_response", or "error:*"
     """
     for attempt in range(1, retries + 1):
         try:
@@ -110,15 +175,10 @@ def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retr
 
             title = driver.title
             source = driver.page_source.strip()
-            # logging.info(f"[{attempt}/{retries}] Checking: {url} - Title: {title} - Source length: {len(source)}")
 
-            # Check for empty or error-like response
-            if not source:
-                return "empty_response", delay, None
-            if any(sig.lower() in source.lower() for sig in ERROR_SIGNATURES):
+            if not source or any(sig.lower() in source.lower() for sig in ERROR_SIGNATURES):
                 return "empty_response", delay, None
 
-            # Handle WAF or browser challenge
             if "one moment" in title.lower() or "one moment" in source.lower():
                 delay = min(delay + 2, 15)
                 time.sleep(delay)
@@ -126,7 +186,6 @@ def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retr
                     return "waf_blocked", delay, None
                 continue
 
-            # Detect not-found pages
             if is_not_found(title, source[:100], keywords):
                 return "not_found", max(delay - 1, 1), source
 
@@ -143,11 +202,31 @@ def check_url(driver: uc.Chrome, url: str, delay: int, keywords: List[str], retr
 
     return "error: UnknownError", delay, None
 
+# ────────────────────────────────────────────────────────────────────────────────
+# Output Helpers
+# ────────────────────────────────────────────────────────────────────────────────
+
+def url_to_filename(url: str) -> str:
+    """
+    Generates a safe filename based on the URL.
+    """
+    parsed = urlparse(url)
+    clean_path = parsed.path.strip("/").replace("/", "_") or "root"
+    base = f"{parsed.netloc}_{clean_path}"
+    hashed = hashlib.md5(url.encode()).hexdigest()[:8]
+    return f"{base}_{hashed}.html"
+
 def save_valid_url(output_file: str, url: str):
-    with open(output_file, "a") as f:
+    """
+    Appends a valid URL to the output file.
+    """
+    with open(output_file, "a", encoding="utf-8") as f:
         f.write(url + "\n")
 
-def save_html(html_dir: str, url: str, source: str, saved_hashes: set):
+def save_html(html_dir: str, url: str, source: str, saved_hashes: set, verbose=False):
+    """
+    Saves HTML source to a file unless the content has already been saved (by hash).
+    """
     content_hash = hashlib.md5(source.encode()).hexdigest()
     if content_hash in saved_hashes:
         return
@@ -158,6 +237,12 @@ def save_html(html_dir: str, url: str, source: str, saved_hashes: set):
     filepath = os.path.join(html_dir, filename)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(source)
+    if verbose:
+        logging.info(f"  [↓] HTML saved to: {filepath}")
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Main Processing Logic
+# ────────────────────────────────────────────────────────────────────────────────
 
 def process_urls(
     urls: List[str],
@@ -170,10 +255,14 @@ def process_urls(
     html_dump_dir: Optional[str] = None,
     args=None,
 ):
+    """
+    Main loop: visits each URL and tracks repeated failures per prefix + path.
+    Skips further checks for a path if same failure status appears 3 times.
+    """
     driver = setup_driver(timeout, driver_path)
     try:
-        common_path_status = defaultdict(lambda: deque(maxlen=3))
-        skipped_prefixes = set()
+        prefix_path_status = defaultdict(lambda: deque(maxlen=3))
+        skipped_prefix_path = set()
         saved_hashes = set()
 
         iterator = enumerate(urls, 1)
@@ -181,44 +270,49 @@ def process_urls(
             iterator = tqdm(iterator, total=len(urls), desc="Checking URLs", unit="url")
 
         for idx, url in iterator:
-            common_path = get_common_prefix(url)
-
             if should_skip_path(url, SKIP_PATTERNS):
                 continue
-            if common_path in skipped_prefixes:
+
+            common_prefix = get_common_prefix(url)
+            path_no_query = get_path_without_query(url)
+            
+            prefix_path_key = (common_prefix, path_no_query)
+            
+            # logging.info(f"[~] Prefix/Path: {prefix_path_key}")
+
+            if prefix_path_key in skipped_prefix_path:
                 continue
 
-            recent = common_path_status[common_path]
+            recent = prefix_path_status[prefix_path_key]
             if len(recent) == 3 and len(set(recent)) == 1:
-                skipped_prefixes.add(common_path)
+                skipped_prefix_path.add(prefix_path_key)
+                if args.verbose:
+                    logging.info(f"[!] Skipping {url} due to 3x '{recent[0]}' for prefix/path.")
                 continue
 
             if args.verbose:
                 logging.info(f"[{idx}/{len(urls)}] Visiting: {url}")
+
             status, delay, source = check_url(driver, url, delay, keywords, retries)
-            common_path_status[common_path].append(status)
+            prefix_path_status[prefix_path_key].append(status)
 
             if args.verbose:
-                if status == "not_found":
-                    logging.info("  [!] Page not found.")
-                elif status == "ok":
-                    logging.info("  [+] Page OK.")
-                elif status == "waf_blocked":
-                    logging.info("  [!] WAF detected.")
-                else:
-                    logging.info(f"  [!] {status}")
+                logging.info(f"  [!] Status: {status}")
                 logging.info(f"  [~] Next delay: {delay} seconds")
 
             if status == "ok":
                 if output_file:
                     save_valid_url(output_file, url)
                 if html_dump_dir and source:
-                    save_html(html_dump_dir, url, source, saved_hashes)
+                    save_html(html_dump_dir, url, source, saved_hashes, args.verbose)
 
     finally:
         driver.quit()
 
 def main():
+    """
+    Entry point.
+    """
     args = parse_args()
     setup_logging(args.verbose)
     keywords = [kw.strip() for kw in args.not_found_keywords.split(",")] if args.not_found_keywords else DEFAULT_NOT_FOUND_KEYWORDS
