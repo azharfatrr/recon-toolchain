@@ -28,7 +28,7 @@ from tqdm import tqdm
 # Default configuration
 DEFAULT_NOT_FOUND_KEYWORDS = ["404", "not found", "tidak ditemukan"]
 DEFAULT_DRIVER_PATH = "/usr/local/bin/chromedriver"
-SKIP_PATTERNS = ["*/tag/*", "*/id/*", "*/en/*"]
+SKIP_PATTERNS = ["*/id/*", "*/en/*", "*category*", "*tag*", ]
 ERROR_SIGNATURES = [
     "ERR_EMPTY_RESPONSE",
     "This site can’t be reached",

@@ -62,14 +62,14 @@ else
     echo "[INFO] Skipping Urlfinder – results already exist."
 fi
 
-# # --------------------------------------
-# # Run Gau
-# if [[ ! -s "$GAU_RAW" ]]; then
-#     echo "[INFO] Running Gau for..."
-#     cat "$ACTIVE_DOMAINS" | gau --o "$GAU_RAW" 1>/dev/null
-# else
-#     echo "[INFO] Skipping Gau – results already exist."
-# fi
+# --------------------------------------
+# Run Gau
+if [[ ! -s "$GAU_RAW" ]]; then
+    echo "[INFO] Running Gau for..."
+    cat "$ACTIVE_DOMAINS" | gau --o "$GAU_RAW" 1>/dev/null
+else
+    echo "[INFO] Skipping Gau – results already exist."
+fi
 
 # # --------------------------------------
 # # Run Waybackurls

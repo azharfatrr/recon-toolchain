@@ -48,7 +48,7 @@ if [[ -s "$NMAP_PARSED" ]]; then
     echo "[INFO] Skipping Nmap – parsed results already exist."
 else
     echo "[INFO] Running Nmap scan on target IPs..."
-    nmap -iL "$IP_LIST" -T4 -sS -Pn -oN "$NMAP_RAW" 1>/dev/null
+    nmap -iL "$IP_LIST" -T4 -sS -Pn --min-rate 1000 --max-retries 2 --host-timeout 30s -oN "$NMAP_RAW" 1>/dev/null
 fi
 
 # --------------------------------------
