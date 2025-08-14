@@ -1,6 +1,18 @@
 import os
+import json
 import pandas as pd
+import re
 from urllib.parse import urlparse
+from openpyxl.utils import get_column_letter
+
+
+# Allowed characters in Excel cell values (remove illegal control chars)
+_illegal_chars_re = re.compile(r"[\x00-\x08\x0B-\x0C\x0E-\x1F]")
+
+def _sanitize_excel(s: str) -> str:
+    if not isinstance(s, str):
+        return s
+    return _illegal_chars_re.sub("", s)
 
 # --------------------------
 # Reason logic for ports
@@ -18,7 +30,6 @@ def port_reason(port, service):
 # --------------------------
 def endpoint_reason(path):
     path = path.lower()
-
     high_keywords = [
         '/admin', '/upload', '/debug', '/shell', '/login', '/register',
         '/signup', '/signin', '/edit', '/delete', '/remove', '/config',
@@ -63,7 +74,6 @@ def endpoint_reason(path):
 
     return "Generic or static-looking endpoint", 0
 
-
 # --------------------------
 # Load subdomains
 # --------------------------
@@ -107,47 +117,108 @@ def load_ports(file_path):
 # --------------------------
 def load_endpoints(file_path):
     rows = []
-    with open(file_path) as f:
+    with open(file_path, encoding="utf-8", errors="ignore") as f:
         for line in f:
             url = line.strip().strip('"').strip("’")
             if url:
                 try:
                     parsed = urlparse(url)
-                    protocol = parsed.scheme.upper()
-                    path = parsed.path or "/"
-                    ext = os.path.splitext(path)[1].lower().lstrip(".") or "none"
+                    protocol = _sanitize_excel(parsed.scheme.upper())
+                    path = _sanitize_excel(parsed.path or "/")
+                    ext = _sanitize_excel(os.path.splitext(path)[1].lower().lstrip(".") or "none")
                     reason = endpoint_reason(path)
 
                     rows.append({
-                        "URL (Endpoint)": url,
+                        "URL (Endpoint)": _sanitize_excel(url),
                         "Protocol": protocol,
                         "File Extension": ext,
-                        "Reason to Test First": reason[0],
-                        "Notes": reason[1],
+                        "Reason to Test First": _sanitize_excel(reason[0]),
+                        "Rank": reason[1],
                     })
                 except Exception:
                     rows.append({
-                        "URL (Endpoint)": url,
+                        "URL (Endpoint)": _sanitize_excel(url),
                         "Protocol": "Unknown",
                         "File Extension": "error",
                         "Reason to Test First": "Could not parse URL",
-                        "Notes": "0"
+                        "Rank": "0"
                     })
     df = pd.DataFrame(rows)
-    return df.sort_values(by="File Extension")
+    return df.sort_values(by="Rank", ascending=False)
+
+# --------------------------
+# Load vulnerabilities
+# --------------------------
+def load_vulnerabilities(file_path):
+    severity_order = {"critical": 1, "high": 2, "medium": 3, "low": 4, "info": 5, "unknown": 6}
+    rows = []
+    
+    with open(file_path) as f:
+        for line in f:
+            try:
+                data = json.loads(line.strip())
+                template_id = data.get("template-id", "")
+                template_name = data.get("info", {}).get("name", "")
+                vtype = data.get("type", "")
+                severity = data.get("info", {}).get("severity", "")
+                host = data.get("host", "")
+                url = data.get("url", "")
+                matched_at = data.get("matched-at", "")
+                extracted_results = ", ".join(data.get("extracted-results", [])) if data.get("extracted-results") else ""
+
+                rows.append({
+                    "Template ID": template_id,
+                    "Template Name": template_name,
+                    "Type": vtype,
+                    "Severity": severity,
+                    "Host": host,
+                    "Url": url,
+                    "Matcher": matched_at,
+                    "Results": extracted_results
+                })
+            except json.JSONDecodeError:
+                continue
+    df = pd.DataFrame(rows)
+    
+    # Sort by severity according to severity_order
+    df["Severity Rank"] = df["Severity"].map(lambda s: severity_order.get(s, 99))
+    df = df.sort_values(by="Severity Rank").drop(columns=["Severity Rank"])
+    
+    return df
 
 # --------------------------
 # Main function
 # --------------------------
-def generate_dashboard(subdomain_file, port_file, endpoint_file, output_excel):
+def autosize_columns(ws):
+    for col in ws.columns:
+        max_length = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[col_letter].width = adjusted_width
+
+def generate_dashboard(subdomain_file, port_file, endpoint_file, vuln_file, output_excel):
     domain_df = load_subdomains(subdomain_file)
     port_df = load_ports(port_file)
     endpoint_df = load_endpoints(endpoint_file)
+    vuln_df = load_vulnerabilities(vuln_file)
 
     with pd.ExcelWriter(output_excel, engine="openpyxl") as writer:
         domain_df.to_excel(writer, sheet_name="Domain", index=False)
         port_df.to_excel(writer, sheet_name="Ports", index=False)
         endpoint_df.to_excel(writer, sheet_name="Endpoints", index=False)
+        vuln_df.to_excel(writer, sheet_name="Vulnerabilities", index=False)
+
+        # Access the workbook and autosize each sheet
+        workbook = writer.book
+        for sheet_name in workbook.sheetnames:
+            ws = workbook[sheet_name]
+            autosize_columns(ws)
 
     print(f"[+] Excel dashboard generated: {output_excel}")
 
@@ -156,11 +227,12 @@ def generate_dashboard(subdomain_file, port_file, endpoint_file, output_excel):
 # --------------------------
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="Generate Dashboard Excel with Domain, Ports, Endpoints sheets")
+    parser = argparse.ArgumentParser(description="Generate Dashboard Excel with Domain, Ports, Endpoints, Vulnerabilities sheets")
     parser.add_argument("--subdomains", required=True, help="Subdomain file (subdomain IP)")
     parser.add_argument("--ports", required=True, help="Port file (IP port service)")
     parser.add_argument("--endpoints", required=True, help="Endpoint file with full URLs")
+    parser.add_argument("--vulns", required=True, help="Nuclei JSONL vulnerability file")
     parser.add_argument("-o", "--output", default="pt_dashboard.xlsx", help="Output Excel filename")
     args = parser.parse_args()
 
-    generate_dashboard(args.subdomains, args.ports, args.endpoints, args.output)
+    generate_dashboard(args.subdomains, args.ports, args.endpoints, args.vulns, args.output)
