@@ -38,8 +38,8 @@ CREDENTIALS="$RESULT_PATH/credentials.txt"
 # --------------------------------------
 # Force cleanup
 if [[ "$FORCE" == "--force" ]]; then
-    rm -rf "$RAW_PATH"
-    rm -f "$FILTERED_URLS" "$SORTED_BY_EXT" "$ACTIVE_URLS" "$PAGE_HTML" "$CREDENTIALS"
+    rm -rf "$RAW_PATH" "$PAGE_HTML"
+    rm -f "$FILTERED_URLS" "$SORTED_BY_EXT" "$ACTIVE_URLS" "$CREDENTIALS"
 fi
 
 # --------------------------------------

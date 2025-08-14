@@ -23,6 +23,7 @@ LOG_FILE="$LOG_DIR/run_${UTC_TIMESTAMP}.log"
 SUBDOMAIN_SCRIPT="./subdomain.sh"
 PORT_SCAN_SCRIPT="./port_scanning.sh"
 ENDPOINT_SCRIPT="./endpoint.sh"
+VULNERABILITY_SCRIPT="./vulnerability-assessment.sh"
 
 # --------------------------------------
 # Run all scripts with combined logging
@@ -40,6 +41,10 @@ ENDPOINT_SCRIPT="./endpoint.sh"
     echo
     echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Endpoint scanning..."
     bash "$ENDPOINT_SCRIPT" "$TARGET" "$FORCE"
+
+    echo
+    echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Vulnerability Assessment..."
+    bash "$VULNERABILITY_SCRIPT" "$TARGET" "$FORCE"
 
     echo
     echo "========== Scan completed: $(date -u +"%Y-%m-%d %H:%M:%S UTC") =========="
