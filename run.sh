@@ -8,6 +8,14 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
+# Activate Python virtual environment
+# --------------------------------------
+if [[ ! -f "venv/bin/activate" ]]; then
+    python3 -m venv venv &>/dev/null
+fi
+
+source "venv/bin/activate"
+
 # --------------------------------------
 # Configuration
 TARGET="$1"
@@ -24,6 +32,7 @@ SUBDOMAIN_SCRIPT="./subdomain.sh"
 PORT_SCAN_SCRIPT="./port_scanning.sh"
 ENDPOINT_SCRIPT="./endpoint.sh"
 VULNERABILITY_SCRIPT="./vulnerability-assessment.sh"
+DASHBOARD_SCRIPT="./dashboard.sh"
 
 # --------------------------------------
 # Run all scripts with combined logging
@@ -45,6 +54,10 @@ VULNERABILITY_SCRIPT="./vulnerability-assessment.sh"
     echo
     echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Vulnerability Assessment..."
     bash "$VULNERABILITY_SCRIPT" "$TARGET" "$FORCE"
+
+    echo
+    echo "[*] $(date -u +"%Y-%m-%d %H:%M:%S UTC") - Dashboard Generation..."
+    bash "$DASHBOARD_SCRIPT" "$TARGET" "$FORCE"
 
     echo
     echo "========== Scan completed: $(date -u +"%Y-%m-%d %H:%M:%S UTC") =========="

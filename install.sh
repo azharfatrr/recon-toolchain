@@ -712,6 +712,20 @@ function install_brew() {
 	cargo install ripgen &>/dev/null
 }
 
+function install_requirements() {
+	sudo ./install-requirements.sh || {
+		echo -e "${red}[!] Failed to install python requirements.${reset}"
+		exit 1
+	}
+	echo -e "${bgreen}Python requirements installed successfully!${reset}\n"
+
+	sudo ./install-chrome.sh || {
+		echo -e "${red}[!] Failed to install Chrome.${reset}"
+		exit 1
+	}
+	echo -e "${bgreen}Chrome installed successfully!${reset}\n"
+}
+
 function configuring_system_path() {
 	echo -e "${bblue}Running: Configuring system path${reset}\n"
 	mkdir -p ${HOME}/.gf
@@ -740,6 +754,8 @@ function initial_setup() {
 	copy_golang_tools
 
 	download_required_files
+
+	install_requirements
 
 	# # Make axiom_config.sh executable
 	chmod +x "${tools}/axiom_config.sh" || {

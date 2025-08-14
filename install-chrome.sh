@@ -2,6 +2,12 @@
 
 set -e
 
+# Abort if Google Chrome is already installed
+if command -v google-chrome &>/dev/null; then
+    echo "[!] Google Chrome is already installed."
+    exit 0
+fi
+
 echo "[*] Uninstalling old Google Chrome and ChromeDriver..."
 sudo apt remove -y google-chrome-stable || true
 sudo rm -rf /usr/local/bin/chromedriver
@@ -24,7 +30,6 @@ wget -q -N "$CHROMEDRIVER_URL" -O /tmp/chromedriver.zip
 unzip -q /tmp/chromedriver.zip -d /tmp/chromedriver
 
 sudo cp /tmp/chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
-
 sudo chmod +x /usr/local/bin/chromedriver
 sudo chown "$USER":"$USER" /usr/local/bin/chromedriver
 
